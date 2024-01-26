@@ -1,12 +1,12 @@
-import websocket, re
+import websocket, re, json
 from colorama import Fore, Back, Style
 
 class Game:
     def __init__(self):
         self.width = 20
         self.height = 20
-        self.p1 = None
-        self.p2 = None
+        self.p1 = []
+        self.p2 = []
         self.apples = []
         self.board  = [[0 for i in range(self.width)] for i in range(self.height)]
     
@@ -26,7 +26,33 @@ class Game:
             print(text)
         return
 
+    def update_board(self):
+        self.board  = [[0 for i in range(self.width)] for i in range(self.height)]
+        for el in self.p1:
+            self.board[el["y"]][el["x"]]=1
+        for el in self.p2:
+            self.board[el["y"]][el["x"]]=2
+        for el in self.apples:
+            self.board[el["y"]][el["x"]]=3
+
+    def update_snakes(self, snakes):
+        self.p1 = []
+        self.p2 = []
+        snakes = json.loads(snakes[2:])[1]
+        print("player 1")
+        for square in snakes[0]:
+            new_square = {"x":square["x"]//40, "y":square["y"]//40}
+            print(new_square)
+            self.p1.append(new_square)
+        print("player 2")
+        for square in snakes[1]:
+            new_square = {"x":square["x"]//40, "y":square["y"]//40}
+            print(new_square)
+            self.p2.append(new_square)
+        self.update_board()
+
 def play(ws):
+    game = Game()
     while True:
         res = ws.recv()
         if (res=="2"):
@@ -37,7 +63,8 @@ def play(ws):
             return
         elif (re.search('updateSnakes', res)):
             print("snake update")
-            print(res)
+            game.update_snakes(res)
+            game.print()
         elif (re.search('addSnake', res)):
             print("add snake")
         elif (re.search('updateApple', res)):
@@ -48,6 +75,3 @@ def play(ws):
             print("make game")
         else:
             print(f"undefined res: {res}")
-
-test = Game()
-test.print()
