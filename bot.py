@@ -1,6 +1,7 @@
 import websocket, re, json
 from colorama import Fore, Back, Style
 
+
 class Game:
     def __init__(self):
         self.width = 20
@@ -29,27 +30,44 @@ class Game:
     def update_board(self):
         self.board  = [[0 for i in range(self.width)] for i in range(self.height)]
         for el in self.p1:
-            self.board[el["y"]][el["x"]]=1
+            try:self.board[el["y"]][el["x"]]=1
+            except:print(f"error: {el}")
         for el in self.p2:
-            self.board[el["y"]][el["x"]]=2
+            try:self.board[el["y"]][el["x"]]=2
+            except:print(f"error: {el}")
+        apples_eaten = []
         for el in self.apples:
-            self.board[el["y"]][el["x"]]=3
+            if self.board[el["y"]][el["x"]]!=0:apples_eaten.append(el)
+            else: self.board[el["y"]][el["x"]]=3
+        for apple in apples_eaten:
+            self.apples.remove(apple)
 
     def update_snakes(self, snakes):
         self.p1 = []
         self.p2 = []
         snakes = json.loads(snakes[2:])[1]
-        print("player 1")
+        #player 1
         for square in snakes[0]:
             new_square = {"x":square["x"]//40, "y":square["y"]//40}
-            print(new_square)
             self.p1.append(new_square)
-        print("player 2")
+
+        #player 2
         for square in snakes[1]:
             new_square = {"x":square["x"]//40, "y":square["y"]//40}
-            print(new_square)
             self.p2.append(new_square)
-        self.update_board()
+    
+    def update_apples(self, apples):
+        apple = json.loads(apples[2:])[2]
+        apple["x"]//=40
+        apple["y"]//=40
+        self.apples.append(apple)
+    
+    def set_apples(self, apples):
+        self.apples = []
+        apples = json.loads(apples[2:])[1]
+        for square in apples:
+            new_square = {"x":square["x"]//40, "y":square["y"]//40}
+            self.apples.append(new_square)
 
 def play(ws):
     game = Game()
@@ -64,14 +82,18 @@ def play(ws):
         elif (re.search('updateSnakes', res)):
             print("snake update")
             game.update_snakes(res)
-            game.print()
         elif (re.search('addSnake', res)):
             print("add snake")
         elif (re.search('updateApple', res)):
             print("apple update")
+            game.update_apples(res)
         elif (re.search('setApples', res)):
             print("set apples")
+            game.set_apples(res)
         elif (re.search('makeGames', res)):
             print("make game")
         else:
             print(f"undefined res: {res}")
+
+        game.update_board()
+        game.print()
