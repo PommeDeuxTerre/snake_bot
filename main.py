@@ -62,18 +62,22 @@ def wait_room(ws):
             print(f"undefined res: {res}")
 
 def main():
-    s = requests.Session()
+    while True:
+        s = requests.Session()
 
-    sid = get_sid(s)
+        sid = get_sid(s)
 
-    ws = init_ws(s, sid)
+        ws = init_ws(s, sid)
 
-    connect(s, sid, ws, datas.name)
+        connect(s, sid, ws, datas.name)
 
-    create_room(ws)
+        create_room(ws)
 
-    wait_room(ws)
+        try:
+            wait_room(ws)
+        except Exception as e:
+            print(f"error: {e}")
 
-    ws.close()
+        ws.close()
 
 main()
