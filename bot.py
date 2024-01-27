@@ -1,6 +1,15 @@
 import websocket, re, json
 from colorama import Fore, Back, Style
 
+"""
+moves:
+    up = W
+    left = A
+    down = S
+    right = D
+"""
+
+MOVES = ["W", "A", "S", "D"]
 
 class Game:
     def __init__(self):
@@ -10,6 +19,7 @@ class Game:
         self.p2 = []
         self.apples = []
         self.board  = [[0 for i in range(self.width)] for i in range(self.height)]
+        self.dir = 1
     
     def print(self):
         for i in range(self.height):
@@ -69,6 +79,12 @@ class Game:
             new_square = {"x":square["x"]//40, "y":square["y"]//40}
             self.apples.append(new_square)
 
+    def get_move(self):
+        if (len(self.p1)%2==0):
+            self.dir+=1
+            self.dir%=4
+            return MOVES[self.dir]
+
 def play(ws):
     game = Game()
     while True:
@@ -82,6 +98,8 @@ def play(ws):
         elif (re.search('updateSnakes', res)):
             print("snake update")
             game.update_snakes(res)
+            move = game.get_move()
+            if move:ws.send(f'42["move","{move}"]')
         elif (re.search('addSnake', res)):
             print("add snake")
         elif (re.search('updateApple', res)):
