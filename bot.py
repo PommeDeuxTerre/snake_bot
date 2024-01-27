@@ -1,13 +1,7 @@
 import websocket, re, json
 from colorama import Fore, Back, Style
+import time
 
-"""
-moves:
-    up = W
-    left = A
-    down = S
-    right = D
-"""
 
 MOVES = ["W", "A", "S", "D"]
 
@@ -22,18 +16,17 @@ class Game:
         self.dir = 1
     
     def print(self):
+        texts = [
+            Back.WHITE + "  "+Style.RESET_ALL,
+            Back.GREEN + "  "+Style.RESET_ALL,
+            Back.BLUE + "  "+Style.RESET_ALL,
+            Back.RED + "  "+Style.RESET_ALL
+        ]
+
         for i in range(self.height):
             text = ""
             for j in range(self.width):
-                match self.board[i][j]:
-                    case 0:
-                        text+=Back.WHITE + "  "+Style.RESET_ALL
-                    case 1:
-                        text+=Back.GREEN + "  "+Style.RESET_ALL
-                    case 2:
-                        text+=Back.BLUE + "  "+Style.RESET_ALL
-                    case 3:
-                        text+=Back.RED + "  "+Style.RESET_ALL
+                text+=texts[self.board[i][j]]
             print(text)
         return
 
@@ -152,7 +145,11 @@ def play(ws):
             #print("check ping")
             ws.send("3")
         elif (re.search('onEnd', res)):
+            game = Game()
+            time.sleep(0.5)
+            ws.send('42["playRoom"]')
             #print("game finished")
+        elif (re.search("removeClientRoom", res)):
             return
         elif (re.search('updateSnakes', res)):
             #print("snake update")
@@ -177,4 +174,4 @@ def play(ws):
             pass
 
         game.update_board()
-        #game.print()
+        game.print()

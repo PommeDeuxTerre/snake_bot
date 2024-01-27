@@ -45,7 +45,6 @@ def create_room(ws):
     ws.recv()
 
 def wait_room(ws):
-    nb_players = 1
     while True:
         res = ws.recv()
         if (res=="2"):
@@ -55,17 +54,11 @@ def wait_room(ws):
             print("lancement de la partie")
             ws.send('42["playRoom"]')
             play(ws)
-            nb_players+=1
-            continue
         elif (re.search("removeClientRoom", res)):
             print("orther player quit")
             nb_players-=1
         else:
             print(f"undefined res: {res}")
-        if nb_players>=2:
-            print("lancement de la partie")
-            ws.send('42["playRoom"]')
-            play(ws)
 
 def main():
     username = "patate"
