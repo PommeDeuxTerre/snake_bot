@@ -108,6 +108,7 @@ class Game:
                         queue.append({"x":next_node["x"], "y":next_node["y"]})
             #print(f"apple: {apple}")
 
+            if apple==None:return
             #backtrack to find the next node to go
             node = apple
             next_node = board[node["y"]][node["x"]]
@@ -167,6 +168,7 @@ class Game:
                     queue.append({"x":next_node["x"], "y":next_node["y"]})
         #print(f"apple: {apple}")
 
+        if apple==None:return
         #backtrack to find the next node to go
         node = apple
         next_node = board[node["y"]][node["x"]]
