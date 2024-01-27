@@ -84,6 +84,36 @@ class Game:
             self.dir+=1
             self.dir%=4
             return MOVES[self.dir]
+        #find the best path to get an apple by bfs
+        else:
+            #hashmap to check if a node's already been explored and do the backtracking
+            board  = [[0 for i in range(self.width)] for i in range(self.height)]
+            queue = [self.p1[0]]
+            print(f"snake: {self.p1[0]}")
+            #put true where the head is, for the backtracking
+            board[self.p1[0]["y"]][self.p1[0]["x"]] = True
+            apple = None
+            while queue and not apple:
+                node = queue.pop(0)
+                next_nodes = [
+                    #up
+                    {"x": node["x"], "y": (node["y"]-1)%self.height},
+                    #left
+                    {"x": (node["x"]-1)%self.width, "y": node["y"]},
+                    #down
+                    {"x": node["x"], "y": (node["y"]+1)%self.height},
+                    #right
+                    {"x": (node["x"]+1)%self.width, "y": node["y"]}
+                ]
+                for next_node in next_nodes:
+                    if not board[next_node["y"]][next_node["x"]]:
+                        board[next_node["y"]][next_node["x"]]=node
+                        if self.board[next_node["y"]][next_node["x"]]==3:
+                            apple = {"x":next_node["x"], "y":next_node["y"]}
+                            break
+                        queue.append({"x":next_node["x"], "y":next_node["y"]})
+            print(f"apple: {apple}")
+    
 
 def play(ws):
     game = Game()
