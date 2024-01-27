@@ -72,7 +72,7 @@ class Game:
             new_square = {"x":square["x"]//40, "y":square["y"]//40}
             self.apples.append(new_square)
 
-    def get_move(self):
+    def get_move_0(self):
         if (len(self.p1)%2==0):
             self.dir+=1
             self.dir%=4
@@ -100,7 +100,7 @@ class Game:
                     {"x": (node["x"]+1)%self.width, "y": node["y"]}
                 ]
                 for next_node in next_nodes:
-                    if not board[next_node["y"]][next_node["x"]]:
+                    if not board[next_node["y"]][next_node["x"]] and not self.board[next_node["y"]][next_node["x"]] in [1, 2]:
                         board[next_node["y"]][next_node["x"]]=node
                         if self.board[next_node["y"]][next_node["x"]]==3:
                             apple = {"x":next_node["x"], "y":next_node["y"]}
@@ -137,8 +137,68 @@ class Game:
                 self.dir = move
                 return MOVES[move]
 
-def play(ws):
+    def get_move_1(self):
+        #hashmap to check if a node's already been explored and do the backtracking
+        board  = [[0 for i in range(self.width)] for i in range(self.height)]
+        queue = [self.p1[0]]
+        #print(f"snake: {self.p1[0]}")
+        #put true where the head is, for the backtracking
+        board[self.p1[0]["y"]][self.p1[0]["x"]] = True
+        apple = None
+        #find the closest apple
+        while queue and not apple:
+            node = queue.pop(0)
+            next_nodes = [
+                #up
+                {"x": node["x"], "y": (node["y"]-1)%self.height},
+                #left
+                {"x": (node["x"]-1)%self.width, "y": node["y"]},
+                #down
+                {"x": node["x"], "y": (node["y"]+1)%self.height},
+                #right
+                {"x": (node["x"]+1)%self.width, "y": node["y"]}
+            ]
+            for next_node in next_nodes:
+                if (not board[next_node["y"]][next_node["x"]]) and not self.board[next_node["y"]][next_node["x"]] in [1, 2]:
+                    board[next_node["y"]][next_node["x"]]=node
+                    if self.board[next_node["y"]][next_node["x"]]==3:
+                        apple = {"x":next_node["x"], "y":next_node["y"]}
+                        break
+                    queue.append({"x":next_node["x"], "y":next_node["y"]})
+        #print(f"apple: {apple}")
+
+        #backtrack to find the next node to go
+        node = apple
+        next_node = board[node["y"]][node["x"]]
+        while board[next_node["y"]][next_node["x"]]!=True:
+            node = next_node
+            next_node = board[node["y"]][node["x"]]
+
+        #get the dir to take
+        #up
+        if (node["x"]==self.p1[0]["x"] and node["y"]==(self.p1[0]["y"]-1)%self.height):
+            move = 0
+        #left
+        elif (node["x"]==(self.p1[0]["x"]-1)%self.width and node["y"]==self.p1[0]["y"]):
+            move = 1
+        #down
+        elif (node["x"]==self.p1[0]["x"] and node["y"]==(self.p1[0]["y"]+1)%self.height):
+            move = 2
+        #right
+        elif (node["x"]==(self.p1[0]["x"]+1)%self.width and node["y"]==self.p1[0]["y"]):
+            move = 3
+        else:
+            print(f"node : {node}")
+            print(f"p1 : {self.p1[0]}")
+        
+        #print(move, self.dir)
+        if (move!=self.dir):
+            self.dir = move
+            return MOVES[move]
+
+def play(ws, bot):
     game = Game()
+    bots = [game.get_move_0, game.get_move_1]
     while True:
         res = ws.recv()
         if (res=="2"):
@@ -146,6 +206,7 @@ def play(ws):
             ws.send("3")
         elif (re.search('onEnd', res)):
             game = Game()
+            bots = [game.get_move_0, game.get_move_1]
             time.sleep(0.5)
             ws.send('42["playRoom"]')
             #print("game finished")
@@ -154,7 +215,8 @@ def play(ws):
         elif (re.search('updateSnakes', res)):
             #print("snake update")
             game.update_snakes(res)
-            move = game.get_move()
+            game.update_board()
+            move = bots[bot]()
             #print(move)
             if move!=None:ws.send(f'42["move","{move}"]')
         elif (re.search('addSnake', res)):
@@ -174,4 +236,4 @@ def play(ws):
             pass
 
         game.update_board()
-        #game.print()
+        game.print()

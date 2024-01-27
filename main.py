@@ -3,6 +3,7 @@ import websocket
 import json
 import re
 from bot import play
+import datas
 
 def get_sid(session):
     url = "https://snake-online-d2fcff637053.herokuapp.com/socket.io/?EIO=4&transport=polling&t=Or6DQd9"
@@ -53,7 +54,7 @@ def wait_room(ws):
         elif (re.search("addClientRoom", res)):
             print("lancement de la partie")
             ws.send('42["playRoom"]')
-            play(ws)
+            play(ws, datas.bot)
         elif (re.search("removeClientRoom", res)):
             print("orther player quit")
             nb_players-=1
@@ -61,14 +62,13 @@ def wait_room(ws):
             print(f"undefined res: {res}")
 
 def main():
-    username = "patate"
     s = requests.Session()
 
     sid = get_sid(s)
 
     ws = init_ws(s, sid)
 
-    connect(s, sid, ws, username)
+    connect(s, sid, ws, datas.name)
 
     create_room(ws)
 
