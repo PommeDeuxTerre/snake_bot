@@ -236,4 +236,4 @@ def play(ws, bot):
             pass
 
         game.update_board()
-        game.print()
+        #game.print()
