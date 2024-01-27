@@ -174,4 +174,4 @@ def play(ws):
             pass
 
         game.update_board()
-        game.print()
+        #game.print()
