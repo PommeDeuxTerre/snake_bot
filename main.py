@@ -49,7 +49,7 @@ def wait_room(ws):
     while True:
         res = ws.recv()
         if (res=="2"):
-            print("check ping")
+            #print("check ping")
             ws.send("3")
         elif (re.search("addClientRoom", res)):
             print("lancement de la partie")
