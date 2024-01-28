@@ -73,7 +73,7 @@ class Game:
             self.apples.append(new_square)
 
     def get_move_0(self):
-        if (len(self.p1)%2==0):
+        if (len(self.p1)==4):
             self.dir+=1
             self.dir%=4
             return MOVES[self.dir]
