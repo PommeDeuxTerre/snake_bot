@@ -197,10 +197,91 @@ class Game:
         if (move!=self.dir):
             self.dir = move
             return MOVES[move]
+    
+    def get_move_2(self):
+        if len(self.p2)<2:return self.get_move_1()
+        #find the pos of the next case of the p2
+        potential_targets = [
+            {"x": self.p2[0]["x"], "y": (self.p2[0]["y"]-1)%self.height},
+            {"x": (self.p2[0]["x"]-1)%self.width, "y": self.p2[0]["y"]},
+            {"x": self.p2[0]["x"], "y": (self.p2[0]["y"]+1)%self.height},
+            {"x": (self.p2[0]["x"]+1)%self.width, "y": self.p2[0]["y"]},
+        ]
+
+        true_target = None
+        for i in range(len(potential_targets)):
+            if self.p2[1]["x"]==potential_targets[i]["x"] and self.p2[1]["y"]==potential_targets[i]["y"]:
+                true_target = potential_targets[(i+2)%len(potential_targets)]
+                if self.p1[0]["x"]==true_target["x"] and self.p1[0]["y"]==true_target["y"]:return (i+2+1)%len(potential_targets)
+
+        #if not found
+        print("new")
+        print(self.p1[0])
+        print(true_target)
+        if not true_target:return self.get_move_1()
+
+        #hashmap to check if a node's already been explored and do the backtracking
+        board  = [[0 for i in range(self.width)] for i in range(self.height)]
+        queue = [self.p1[0]]
+        #print(f"snake: {self.p1[0]}")
+        #put true where the head is, for the backtracking
+        board[self.p1[0]["y"]][self.p1[0]["x"]] = True
+        target = None
+        #find the target
+        while queue and not target:
+            node = queue.pop(0)
+            next_nodes = [
+                #up
+                {"x": node["x"], "y": (node["y"]-1)%self.height},
+                #left
+                {"x": (node["x"]-1)%self.width, "y": node["y"]},
+                #down
+                {"x": node["x"], "y": (node["y"]+1)%self.height},
+                #right
+                {"x": (node["x"]+1)%self.width, "y": node["y"]}
+            ]
+            for next_node in next_nodes:
+                if (not board[next_node["y"]][next_node["x"]]) and not self.board[next_node["y"]][next_node["x"]] in [1, 2]:
+                    board[next_node["y"]][next_node["x"]]=node
+                    if next_node["y"]==true_target["y"] and next_node["x"]==true_target["x"]:
+                        target = {"x":next_node["x"], "y":next_node["y"]}
+                        break
+                    queue.append({"x":next_node["x"], "y":next_node["y"]})
+        #print(f"target: {target}")
+
+        if target==None:return
+        #backtrack to find the next node to go
+        node = target
+        next_node = board[node["y"]][node["x"]]
+        while board[next_node["y"]][next_node["x"]]!=True:
+            node = next_node
+            next_node = board[node["y"]][node["x"]]
+
+        #get the dir to take
+        #up
+        if (node["x"]==self.p1[0]["x"] and node["y"]==(self.p1[0]["y"]-1)%self.height):
+            move = 0
+        #left
+        elif (node["x"]==(self.p1[0]["x"]-1)%self.width and node["y"]==self.p1[0]["y"]):
+            move = 1
+        #down
+        elif (node["x"]==self.p1[0]["x"] and node["y"]==(self.p1[0]["y"]+1)%self.height):
+            move = 2
+        #right
+        elif (node["x"]==(self.p1[0]["x"]+1)%self.width and node["y"]==self.p1[0]["y"]):
+            move = 3
+        else:
+            print(f"node : {node}")
+            print(f"p1 : {self.p1[0]}")
+        
+        #print(move, self.dir)
+        if (move!=self.dir):
+            self.dir = move
+            return MOVES[move]
 
 def play(ws, bot):
     game = Game()
-    bots = [game.get_move_0, game.get_move_1]
+    bots = [game.get_move_0, game.get_move_1, game.get_move_2]
     while True:
         res = ws.recv()
         if (res=="2"):
@@ -208,8 +289,8 @@ def play(ws, bot):
             ws.send("3")
         elif (re.search('onEnd', res)):
             game = Game()
-            bots = [game.get_move_0, game.get_move_1]
-            time.sleep(0.5)
+            bots = [game.get_move_0, game.get_move_1, game.get_move_2]
+            time.sleep(1)
             ws.send('42["playRoom"]')
             #print("game finished")
         elif (re.search("removeClientRoom", res)):
