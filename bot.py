@@ -1,9 +1,20 @@
-import websocket, re, json
+import websocket, re, json, time
 from colorama import Fore, Back, Style
-import time
 
 
 MOVES = ["W", "A", "S", "D"]
+
+def check_apple(game, square):
+    res = game.board[square["y"]][square["x"]]==3
+    return res
+
+def check_head_p2(game, square):
+    res = square["x"]==game.p2[0]["x"] and square["y"]==game.p2[0]["y"]
+    return res
+
+def voldemor(game, square):
+    if len(game.p2) >= len(game.p1):return check_apple(game, square)
+    return check_head_p2(game, square) or check_apple(game, square)
 
 class Game:
     def __init__(self):
@@ -71,154 +82,12 @@ class Game:
         for square in apples:
             new_square = {"x":square["x"]//40, "y":square["y"]//40}
             self.apples.append(new_square)
-
-    def get_move_0(self):
-        if (len(self.p1)==4):
+    
+    def get_move(self, check_good_target, square=False, check_target_backup = None):
+        if square and len(self.p1)==4:
             self.dir+=1
             self.dir%=4
             return MOVES[self.dir]
-        #find the best path to get an apple by bfs
-        else:
-            #hashmap to check if a node's already been explored and do the backtracking
-            board  = [[0 for i in range(self.width)] for i in range(self.height)]
-            queue = [self.p1[0]]
-            #print(f"snake: {self.p1[0]}")
-            #put true where the head is, for the backtracking
-            board[self.p1[0]["y"]][self.p1[0]["x"]] = True
-            apple = None
-            #find the closest apple
-            while queue and not apple:
-                node = queue.pop(0)
-                next_nodes = [
-                    #up
-                    {"x": node["x"], "y": (node["y"]-1)%self.height},
-                    #left
-                    {"x": (node["x"]-1)%self.width, "y": node["y"]},
-                    #down
-                    {"x": node["x"], "y": (node["y"]+1)%self.height},
-                    #right
-                    {"x": (node["x"]+1)%self.width, "y": node["y"]}
-                ]
-                for next_node in next_nodes:
-                    if not board[next_node["y"]][next_node["x"]] and not self.board[next_node["y"]][next_node["x"]] in [1, 2]:
-                        board[next_node["y"]][next_node["x"]]=node
-                        if self.board[next_node["y"]][next_node["x"]]==3:
-                            apple = {"x":next_node["x"], "y":next_node["y"]}
-                            break
-                        queue.append({"x":next_node["x"], "y":next_node["y"]})
-            #print(f"apple: {apple}")
-
-            if apple==None:return
-            #backtrack to find the next node to go
-            node = apple
-            next_node = board[node["y"]][node["x"]]
-            while board[next_node["y"]][next_node["x"]]!=True:
-                node = next_node
-                next_node = board[node["y"]][node["x"]]
-
-            #get the dir to take
-            #up
-            if (node["x"]==self.p1[0]["x"] and node["y"]==(self.p1[0]["y"]-1)%self.height):
-                move = 0
-            #left
-            elif (node["x"]==(self.p1[0]["x"]-1)%self.width and node["y"]==self.p1[0]["y"]):
-                move = 1
-            #down
-            elif (node["x"]==self.p1[0]["x"] and node["y"]==(self.p1[0]["y"]+1)%self.height):
-                move = 2
-            #right
-            elif (node["x"]==(self.p1[0]["x"]+1)%self.width and node["y"]==self.p1[0]["y"]):
-                move = 3
-            else:
-                print(f"node : {node}")
-                print(f"p1 : {self.p1[0]}")
-            
-            #print(move, self.dir)
-            if (move!=self.dir):
-                self.dir = move
-                return MOVES[move]
-
-    def get_move_1(self):
-        #hashmap to check if a node's already been explored and do the backtracking
-        board  = [[0 for i in range(self.width)] for i in range(self.height)]
-        queue = [self.p1[0]]
-        #print(f"snake: {self.p1[0]}")
-        #put true where the head is, for the backtracking
-        board[self.p1[0]["y"]][self.p1[0]["x"]] = True
-        apple = None
-        #find the closest apple
-        while queue and not apple:
-            node = queue.pop(0)
-            next_nodes = [
-                #up
-                {"x": node["x"], "y": (node["y"]-1)%self.height},
-                #left
-                {"x": (node["x"]-1)%self.width, "y": node["y"]},
-                #down
-                {"x": node["x"], "y": (node["y"]+1)%self.height},
-                #right
-                {"x": (node["x"]+1)%self.width, "y": node["y"]}
-            ]
-            for next_node in next_nodes:
-                if (not board[next_node["y"]][next_node["x"]]) and not self.board[next_node["y"]][next_node["x"]] in [1, 2]:
-                    board[next_node["y"]][next_node["x"]]=node
-                    if self.board[next_node["y"]][next_node["x"]]==3:
-                        apple = {"x":next_node["x"], "y":next_node["y"]}
-                        break
-                    queue.append({"x":next_node["x"], "y":next_node["y"]})
-        #print(f"apple: {apple}")
-
-        if apple==None:return
-        #backtrack to find the next node to go
-        node = apple
-        next_node = board[node["y"]][node["x"]]
-        while board[next_node["y"]][next_node["x"]]!=True:
-            node = next_node
-            next_node = board[node["y"]][node["x"]]
-
-        #get the dir to take
-        #up
-        if (node["x"]==self.p1[0]["x"] and node["y"]==(self.p1[0]["y"]-1)%self.height):
-            move = 0
-        #left
-        elif (node["x"]==(self.p1[0]["x"]-1)%self.width and node["y"]==self.p1[0]["y"]):
-            move = 1
-        #down
-        elif (node["x"]==self.p1[0]["x"] and node["y"]==(self.p1[0]["y"]+1)%self.height):
-            move = 2
-        #right
-        elif (node["x"]==(self.p1[0]["x"]+1)%self.width and node["y"]==self.p1[0]["y"]):
-            move = 3
-        else:
-            print(f"node : {node}")
-            print(f"p1 : {self.p1[0]}")
-        
-        #print(move, self.dir)
-        if (move!=self.dir):
-            self.dir = move
-            return MOVES[move]
-    
-    def get_move_2(self):
-        if len(self.p2)<2:return self.get_move_1()
-        #find the pos of the next case of the p2
-        potential_targets = [
-            {"x": self.p2[0]["x"], "y": (self.p2[0]["y"]-1)%self.height},
-            {"x": (self.p2[0]["x"]-1)%self.width, "y": self.p2[0]["y"]},
-            {"x": self.p2[0]["x"], "y": (self.p2[0]["y"]+1)%self.height},
-            {"x": (self.p2[0]["x"]+1)%self.width, "y": self.p2[0]["y"]},
-        ]
-
-        true_target = None
-        for i in range(len(potential_targets)):
-            if self.p2[1]["x"]==potential_targets[i]["x"] and self.p2[1]["y"]==potential_targets[i]["y"]:
-                true_target = potential_targets[(i+2)%len(potential_targets)]
-                if self.p1[0]["x"]==true_target["x"] and self.p1[0]["y"]==true_target["y"]:return (i+2+1)%len(potential_targets)
-
-        #if not found
-        print("new")
-        print(self.p1[0])
-        print(true_target)
-        if not true_target:return self.get_move_1()
 
         #hashmap to check if a node's already been explored and do the backtracking
         board  = [[0 for i in range(self.width)] for i in range(self.height)]
@@ -227,29 +96,31 @@ class Game:
         #put true where the head is, for the backtracking
         board[self.p1[0]["y"]][self.p1[0]["x"]] = True
         target = None
-        #find the target
+        #find the closest target
         while queue and not target:
             node = queue.pop(0)
             next_nodes = [
-                #up
-                {"x": node["x"], "y": (node["y"]-1)%self.height},
-                #left
-                {"x": (node["x"]-1)%self.width, "y": node["y"]},
-                #down
-                {"x": node["x"], "y": (node["y"]+1)%self.height},
-                #right
-                {"x": (node["x"]+1)%self.width, "y": node["y"]}
+                {"x": node["x"], "y": (node["y"]-1)%self.height},#up
+                {"x": (node["x"]-1)%self.width, "y": node["y"]},#left
+                {"x": node["x"], "y": (node["y"]+1)%self.height},#down
+                {"x": (node["x"]+1)%self.width, "y": node["y"]}#right
             ]
             for next_node in next_nodes:
-                if (not board[next_node["y"]][next_node["x"]]) and not self.board[next_node["y"]][next_node["x"]] in [1, 2]:
-                    board[next_node["y"]][next_node["x"]]=node
-                    if next_node["y"]==true_target["y"] and next_node["x"]==true_target["x"]:
-                        target = {"x":next_node["x"], "y":next_node["y"]}
-                        break
-                    queue.append({"x":next_node["x"], "y":next_node["y"]})
-        #print(f"target: {target}")
+                #check if already explored
+                if board[next_node["y"]][next_node["x"]]:continue
+                board[next_node["y"]][next_node["x"]]=node
 
-        if target==None:return
+                if check_good_target(self, next_node):
+                    target = next_node
+                    break
+
+                if not self.board[next_node["y"]][next_node["x"]] in [1, 2]:
+                    queue.append({"x":next_node["x"], "y":next_node["y"]})
+
+        #print(f"target: {target}")
+        if target==None and check_target_backup==None:return None
+        elif target==None:return self.get_move(check_target_backup)
+
         #backtrack to find the next node to go
         node = target
         next_node = board[node["y"]][node["x"]]
@@ -270,9 +141,6 @@ class Game:
         #right
         elif (node["x"]==(self.p1[0]["x"]+1)%self.width and node["y"]==self.p1[0]["y"]):
             move = 3
-        else:
-            print(f"node : {node}")
-            print(f"p1 : {self.p1[0]}")
         
         #print(move, self.dir)
         if (move!=self.dir):
@@ -281,7 +149,7 @@ class Game:
 
 def play(ws, bot):
     game = Game()
-    bots = [game.get_move_0, game.get_move_1, game.get_move_2]
+    bots = [[check_apple, True, None], [check_apple, False, None], [voldemor, False, check_apple]]
     while True:
         res = ws.recv()
         if (res=="2"):
@@ -289,7 +157,6 @@ def play(ws, bot):
             ws.send("3")
         elif (re.search('onEnd', res)):
             game = Game()
-            bots = [game.get_move_0, game.get_move_1, game.get_move_2]
             time.sleep(1)
             ws.send('42["playRoom"]')
             #print("game finished")
@@ -299,7 +166,7 @@ def play(ws, bot):
             #print("snake update")
             game.update_snakes(res)
             game.update_board()
-            move = bots[bot]()
+            move = game.get_move(bots[bot][0], bots[bot][1], bots[bot][2])
             #print(move)
             if move!=None:ws.send(f'42["move","{move}"]')
         elif (re.search('addSnake', res)):
