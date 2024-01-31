@@ -73,10 +73,7 @@ def main():
 
         create_room(ws)
 
-        try:
-            wait_room(ws)
-        except Exception as e:
-            print(f"error: {e}")
+        wait_room(ws)
 
         ws.close()
 
