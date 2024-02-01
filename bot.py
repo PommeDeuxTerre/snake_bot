@@ -1,5 +1,6 @@
 import websocket, re, json, time
 from colorama import Fore, Back, Style
+import random
 
 
 MOVES = ["W", "A", "S", "D"]
@@ -23,7 +24,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
     #avoid to start with dumb moves
     if anti_dumb:
         dumb_moves = get_dumb_moves(game)
-        print(f"dumb moves: {dumb_moves}")
+        #print(f"dumb moves: {dumb_moves}")
         for dumb_move in dumb_moves:
             board[dumb_move["y"]][dumb_move["x"]] = 1
     #print(f"snake: {game.p1[0]}")
@@ -39,6 +40,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
             {"x": node["x"], "y": (node["y"]+1)%game.height},#down
             {"x": (node["x"]+1)%game.width, "y": node["y"]}#right
         ]
+        random.shuffle(next_nodes)
 
         for next_node in next_nodes:
             #check if already explored
@@ -52,7 +54,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
             if not game.board[next_node["y"]][next_node["x"]] in [1, 2]:
                 queue.append({"x":next_node["x"], "y":next_node["y"]})
 
-    print(f"target: {target}")
+    #print(f"target: {target}")
     if target==None and check_target_backup==None:
         moves = get_all_moves(game, game.p1)
         if not anti_dumb:return moves[0]
@@ -65,12 +67,12 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
                 break
         if not target:return None
     elif target==None:return get_direction_bfs(game, check_target_backup, anti_dumb=anti_dumb)
-    print(f"target: {target}")
+    #print(f"target: {target}")
 
     #backtrack to find the next node to go
     node = target
     next_node = board[node["y"]][node["x"]]
-    print(f"next_node: {next_node}")
+    #print(f"next_node: {next_node}")
     while board[next_node["y"]][next_node["x"]]!=True:
         node = next_node
         next_node = board[node["y"]][node["x"]]
@@ -89,7 +91,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
     elif (node["x"]==(game.p1[0]["x"]+1)%game.width and node["y"]==game.p1[0]["y"]):
         move = 3
     else:
-        print(f"else: {node}")
+        #print(f"else: {node}")
         move = 0
 
     return move
@@ -261,7 +263,7 @@ class Game:
             return MOVES[self.dir]
 
         move = get_direction(self, check_good_target, check_target_backup, anti_dumb)
-        print(move)
+        #print(move)
         #print(move, self.dir)
         if move==None:return None
         if (move!=self.dir):
@@ -307,6 +309,6 @@ def play(ws, bot):
             pass
 
         game.update_board()
-        print("\n\n\n\n")
+        #print("\n\n\n\n")
         #game.print()
         #print(get_void_squares(game, game.p2))
