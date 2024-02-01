@@ -54,12 +54,23 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
 
     print(f"target: {target}")
     if target==None and check_target_backup==None:
-        target = get_all_moves(game, game.p1)
+        moves = get_all_moves(game, game.p1)
+        if not anti_dumb:return moves[0]
+        for move in moves:
+            found = False
+            for dumb in dumb_moves:
+                if dumb["x"]==move["x"] and dumb["y"]==move["y"]:found = True
+            if not found:
+                target = move
+                break
+        if not target:return None
     elif target==None:return get_direction_bfs(game, check_target_backup, anti_dumb=anti_dumb)
+    print(f"target: {target}")
 
     #backtrack to find the next node to go
     node = target
     next_node = board[node["y"]][node["x"]]
+    print(f"next_node: {next_node}")
     while board[next_node["y"]][next_node["x"]]!=True:
         node = next_node
         next_node = board[node["y"]][node["x"]]
@@ -252,6 +263,7 @@ class Game:
         move = get_direction(self, check_good_target, check_target_backup, anti_dumb)
         print(move)
         #print(move, self.dir)
+        if move==None:return None
         if (move!=self.dir):
             self.dir = move
             return MOVES[move]
@@ -296,5 +308,5 @@ def play(ws, bot):
 
         game.update_board()
         print("\n\n\n\n")
-        game.print()
+        #game.print()
         #print(get_void_squares(game, game.p2))
