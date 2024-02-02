@@ -166,7 +166,7 @@ def cancel_move(game, player, move, value):
     game.board[move["y"]][move["x"]] = value
 
 def get_dumb_moves(game, deep=0, deepmax=1):
-    if deep==deepmax:return get_void_squares(game, game.p1)-get_void_squares(game, game.p2)
+    if deep==deepmax:return get_void_squares(game, game.p1)
 
     #get all the moves that are not part of a snake already
     p1_moves = get_all_moves(game, game.p1)
