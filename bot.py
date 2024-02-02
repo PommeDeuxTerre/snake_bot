@@ -27,6 +27,27 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
         #print(f"dumb moves: {dumb_moves}")
         for dumb_move in dumb_moves:
             board[dumb_move["y"]][dumb_move["x"]] = 1
+    
+    # free the tail of the p2 player if there isn't any apple close to its head
+    node = game.p2[0]
+    next_nodes = [
+        {"x": node["x"], "y": (node["y"]-1)%game.height},#up
+        {"x": (node["x"]-1)%game.width, "y": node["y"]},#left
+        {"x": node["x"], "y": (node["y"]+1)%game.height},#down
+        {"x": (node["x"]+1)%game.width, "y": node["y"]}]#right
+    have_apple = False
+    for next_node in next_nodes:
+        if game.board[next_node["y"]][next_node["x"]]==3:have_apple=True
+    
+    if not have_apple:
+        game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=0
+        #if the head of the p2 touch its tail see the tail as an apple
+        for next_node in next_nodes:
+            if next_node["y"]==game.p2[-1]["y"] and next_node["x"]==game.p2[-1]["x"]:
+                game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=3
+                break
+
+
     #print(f"snake: {game.p1[0]}")
     #put true where the head is, for the backtracking
     board[game.p1[0]["y"]][game.p1[0]["x"]] = True
@@ -187,7 +208,6 @@ def get_dumb_moves(game, deep=0, deepmax=1):
             to_remove.append(p1_moves[i])
     
     return to_remove
->>>>>>> 7133e275182ee34a26549b9f4402cffdf80cd8d8
 
 class Game:
     def __init__(self):
