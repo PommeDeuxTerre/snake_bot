@@ -4,6 +4,7 @@ import json
 import re
 from bot import play
 import datas
+import time
 
 def get_sid(session):
     url = "https://snake-online-d2fcff637053.herokuapp.com/socket.io/?EIO=4&transport=polling&t=Or6DQd9"
@@ -73,7 +74,11 @@ def main():
 
         create_room(ws)
 
-        wait_room(ws)
+        try:
+            wait_room(ws)
+        except Exception as e:
+            print(f"{time.ctime()}: \n{e}")
+
 
         ws.close()
 
