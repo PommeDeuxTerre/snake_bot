@@ -43,7 +43,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
 
     #avoid to start with dumb moves
     if anti_dumb:
-        dumb_moves = get_dumb_moves(game)
+        dumb_moves = get_dumb_moves(game, check_good_target)
         #print(f"dumb moves: {dumb_moves}")
         for dumb_move in dumb_moves:
             board[dumb_move["y"]][dumb_move["x"]] = 1
@@ -78,7 +78,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
 
     #print(f"target: {target}")
     if target==None and check_target_backup==None:
-        moves = get_all_moves(game, game.p1)
+        moves = get_all_moves(game, game.p1, check_good_target)
         if not anti_dumb:target = moves[0]
         else:
             for move in moves:
@@ -142,7 +142,7 @@ def get_void_squares(game, player):
 
     return number
 
-def get_all_moves(game, player):
+def get_all_moves(game, player, check_good_target):
     moves = []
     node = player[0]
     next_nodes = [
@@ -153,7 +153,7 @@ def get_all_moves(game, player):
     ]
 
     for next_node in next_nodes:
-        if game.board[next_node["y"]][next_node["x"]] in [0,3]:
+        if game.board[next_node["y"]][next_node["x"]]==0 or check_good_target(game, next_node):
             moves.append(next_node)
     return moves
 
@@ -167,16 +167,14 @@ def cancel_move(game, player, move, value):
     player.remove(move)
     game.board[move["y"]][move["x"]] = value
 
-def get_dumb_moves(game):
-    
-
+def get_dumb_moves(game, check_good_target):
     #get all the moves that are not part of a snake already
-    p1_moves = get_all_moves(game, game.p1)
+    p1_moves = get_all_moves(game, game.p1, check_good_target)
 
     #if same strength or less, avoid head contact
     to_remove = []
     if (len(game.p2) >= len(game.p1)):
-        p2_moves = get_all_moves(game, game.p2)
+        p2_moves = get_all_moves(game, game.p2, check_good_target)
         for move2 in p2_moves:
             for move1 in p1_moves:
                 if move2["x"]==move1["x"] and move2["y"]==move1["y"]:
