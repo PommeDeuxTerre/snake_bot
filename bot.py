@@ -17,7 +17,7 @@ def voldemor(game, square):
     if len(game.p2) >= len(game.p1):return check_apple(game, square)
     return check_head_p2(game, square) or check_apple(game, square)
 
-def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_dumb=False):
+def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_dumb=False, anti_boucle=False):
     #hashmap to check if a node's already been explored and do the backtracking
     board  = [[0 for i in range(game.width)] for i in range(game.height)]
     queue = [game.p1[0]]
@@ -29,23 +29,24 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
             board[dumb_move["y"]][dumb_move["x"]] = 1
     
     # free the tail of the p2 player if there isn't any apple close to its head
-    node = game.p2[0]
-    next_nodes = [
-        {"x": node["x"], "y": (node["y"]-1)%game.height},#up
-        {"x": (node["x"]-1)%game.width, "y": node["y"]},#left
-        {"x": node["x"], "y": (node["y"]+1)%game.height},#down
-        {"x": (node["x"]+1)%game.width, "y": node["y"]}]#right
-    have_apple = False
-    for next_node in next_nodes:
-        if game.board[next_node["y"]][next_node["x"]]==3:have_apple=True
-    
-    if not have_apple:
-        game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=0
-        #if the head of the p2 touch its tail see the tail as an apple
+    if anti_boucle:
+        node = game.p2[0]
+        next_nodes = [
+            {"x": node["x"], "y": (node["y"]-1)%game.height},#up
+            {"x": (node["x"]-1)%game.width, "y": node["y"]},#left
+            {"x": node["x"], "y": (node["y"]+1)%game.height},#down
+            {"x": (node["x"]+1)%game.width, "y": node["y"]}]#right
+        have_apple = False
         for next_node in next_nodes:
-            if next_node["y"]==game.p2[-1]["y"] and next_node["x"]==game.p2[-1]["x"]:
-                game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=3
-                break
+            if game.board[next_node["y"]][next_node["x"]]==3:have_apple=True
+        
+        if not have_apple:
+            game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=0
+            #if the head of the p2 touch its tail see the tail as an apple
+            for next_node in next_nodes:
+                if next_node["y"]==game.p2[-1]["y"] and next_node["x"]==game.p2[-1]["x"]:
+                    game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=3
+                    break
 
 
     #print(f"snake: {game.p1[0]}")
@@ -78,14 +79,15 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
     #print(f"target: {target}")
     if target==None and check_target_backup==None:
         moves = get_all_moves(game, game.p1)
-        if not anti_dumb:return moves[0]
-        for move in moves:
-            found = False
-            for dumb in dumb_moves:
-                if dumb["x"]==move["x"] and dumb["y"]==move["y"]:found = True
-            if not found:
-                target = move
-                break
+        if not anti_dumb:target = moves[0]
+        else:
+            for move in moves:
+                found = False
+                for dumb in dumb_moves:
+                    if dumb["x"]==move["x"] and dumb["y"]==move["y"]:found = True
+                if not found:
+                    target = move
+                    break
         if not target:return None
     elif target==None:return get_direction_bfs(game, check_target_backup, anti_dumb=anti_dumb)
     #print(f"target: {target}")
@@ -237,11 +239,9 @@ class Game:
     def update_board(self):
         self.board  = [[0 for i in range(self.width)] for i in range(self.height)]
         for el in self.p1:
-            try:self.board[el["y"]][el["x"]]=1
-            except:print(f"error: {el}")
+            self.board[el["y"]][el["x"]]=1
         for el in self.p2:
-            try:self.board[el["y"]][el["x"]]=2
-            except:print(f"error: {el}")
+            self.board[el["y"]][el["x"]]=2
         apples_eaten = []
         for el in self.apples:
             if self.board[el["y"]][el["x"]]!=0:apples_eaten.append(el)
@@ -255,12 +255,12 @@ class Game:
         snakes = json.loads(snakes[2:])[1]
         #player 1
         for square in snakes[0]:
-            new_square = {"x":square["x"]//40, "y":square["y"]//40}
+            new_square = {"x":(square["x"]//40)%20, "y":(square["y"]//40)%20}
             self.p1.append(new_square)
 
         #player 2
         for square in snakes[1]:
-            new_square = {"x":square["x"]//40, "y":square["y"]//40}
+            new_square = {"x":(square["x"]//40)%20, "y":(square["y"]//40)%20}
             self.p2.append(new_square)
     
     def update_apples(self, apples):
@@ -293,12 +293,12 @@ class Game:
 def play(ws, bot):
     game = Game()
     """
-    [get_direction, [check_good_target, check_target_backup, anti_dumb], do_square]
+    [get_direction, [check_good_target, check_target_backup, anti_dumb, anti_boucle], do_square]
     """
     bots = [
-        [get_direction_bfs, [check_apple, None, False], True], # pomme des terres
-        [get_direction_bfs, [check_apple, None, False], False], # Pomme Jedusor
-        [get_direction_bfs, [voldemor, check_apple, True], False]] # Pomme Elvis Jedusor
+        [get_direction_bfs, [check_apple, None, False, False], True], # pomme des terres
+        [get_direction_bfs, [check_apple, None, False, False], False], # Pomme Jedusor
+        [get_direction_bfs, [voldemor, check_apple, True, True], False]] # Pomme Elvis Jedusor
     while True:
         res = ws.recv()
         if (res=="2"):
