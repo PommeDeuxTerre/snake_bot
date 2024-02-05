@@ -21,13 +21,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
     #hashmap to check if a node's already been explored and do the backtracking
     board  = [[0 for i in range(game.width)] for i in range(game.height)]
     queue = [game.p1[0]]
-    #avoid to start with dumb moves
-    if anti_dumb:
-        dumb_moves = get_dumb_moves(game)
-        #print(f"dumb moves: {dumb_moves}")
-        for dumb_move in dumb_moves:
-            board[dumb_move["y"]][dumb_move["x"]] = 1
-    
+
     # free the tail of the p2 player if there isn't any apple close to its head
     if anti_boucle:
         node = game.p2[0]
@@ -37,17 +31,23 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
             {"x": node["x"], "y": (node["y"]+1)%game.height},#down
             {"x": (node["x"]+1)%game.width, "y": node["y"]}]#right
         have_apple = False
+        head_tail = False
         for next_node in next_nodes:
             if game.board[next_node["y"]][next_node["x"]]==3:have_apple=True
+            if next_node["y"]==game.p2[-1]["y"] and next_node["x"]==game.p2[-1]["x"]:head_tail=True
         
         if not have_apple:
-            game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=0
             #if the head of the p2 touch its tail see the tail as an apple
-            for next_node in next_nodes:
-                if next_node["y"]==game.p2[-1]["y"] and next_node["x"]==game.p2[-1]["x"]:
-                    game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=3
-                    break
+            if head_tail:game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=3
+            else: game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=0
 
+    #avoid to start with dumb moves
+    if anti_dumb:
+        dumb_moves = get_dumb_moves(game)
+        #print(f"dumb moves: {dumb_moves}")
+        for dumb_move in dumb_moves:
+            board[dumb_move["y"]][dumb_move["x"]] = 1
+    
 
     #print(f"snake: {game.p1[0]}")
     #put true where the head is, for the backtracking
@@ -114,7 +114,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
     elif (node["x"]==(game.p1[0]["x"]+1)%game.width and node["y"]==game.p1[0]["y"]):
         move = 3
     else:
-        #print(f"else: {node}")
+        print(f"else: {node}")
         move = 0
 
     return move
@@ -167,8 +167,8 @@ def cancel_move(game, player, move, value):
     player.remove(move)
     game.board[move["y"]][move["x"]] = value
 
-def get_dumb_moves(game, deep=0, deepmax=1):
-    if deep==deepmax:return get_void_squares(game, game.p1)
+def get_dumb_moves(game):
+    
 
     #get all the moves that are not part of a snake already
     p1_moves = get_all_moves(game, game.p1)
@@ -181,30 +181,22 @@ def get_dumb_moves(game, deep=0, deepmax=1):
             for move1 in p1_moves:
                 if move2["x"]==move1["x"] and move2["y"]==move1["y"]:
                     to_remove.append(move1)
+                    break
         for remove in to_remove:
             p1_moves.remove(remove)
-                    
+    
 
     #get a score for each move
     best_scores = []
     for p1_move in p1_moves:
-        worst_score = 400
+        best_score = -400
         value1 = make_move(game, game.p1, 1, p1_move)
-        for p2_move in get_all_moves(game, game.p2):
-            value2 = make_move(game, game.p2, 2, p2_move)
-            score = get_dumb_moves(game, deep+1)
-            if score<worst_score:
-                worst_score = score
-            cancel_move(game, game.p2, p2_move, value2)
+        score = get_void_squares(game, game.p1)
+        if score>best_score:
+            best_score = score
         cancel_move(game, game.p1, p1_move, value1)
-        best_scores.append(worst_score)
+        best_scores.append(best_score)
     
-    #return the best score if no need of the move
-    best_score = -400
-    for score in best_scores:
-        if score>best_score:best_score=score
-    if deep!=0:return best_score
-
     for i in range(len(p1_moves)):
         if best_scores[i]<best_score:
             to_remove.append(p1_moves[i])
@@ -298,7 +290,7 @@ def play(ws, bot):
     bots = [
         [get_direction_bfs, [check_apple, None, False, False], True], # pomme des terres
         [get_direction_bfs, [check_apple, None, False, False], False], # Pomme Jedusor
-        [get_direction_bfs, [voldemor, check_apple, True, True], False]] # Pomme Elvis Jedusor
+        [get_direction_bfs, [voldemor, None, True, True], False]] # Pomme Elvis Jedusor
     while True:
         res = ws.recv()
         if (res=="2"):
