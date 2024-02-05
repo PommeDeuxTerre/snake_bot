@@ -276,13 +276,13 @@ class Game:
             new_square = {"x":square["x"]//40, "y":square["y"]//40}
             self.apples.append(new_square)
 
-    def get_move(self, check_good_target, get_direction, square=False, check_target_backup = None, anti_dumb=False):
+    def get_move(self, get_direction, get_direction_args, square=False):
         if square and len(self.p1)==4:
             self.dir+=1
             self.dir%=4
             return MOVES[self.dir]
 
-        move = get_direction(self, check_good_target, check_target_backup, anti_dumb)
+        move = get_direction(self, *get_direction_args)
         #print(move)
         #print(move, self.dir)
         if move==None:return None
@@ -292,7 +292,13 @@ class Game:
 
 def play(ws, bot):
     game = Game()
-    bots = [[check_apple, get_direction_bfs, True, None], [check_apple, get_direction_bfs, False, None, True], [voldemor, get_direction_bfs, False, check_apple, True]]
+    """
+    [get_direction, [check_good_target, check_target_backup, anti_dumb], do_square]
+    """
+    bots = [
+        [get_direction_bfs, [check_apple, None, False], True], # pomme des terres
+        [get_direction_bfs, [check_apple, None, False], False], # Pomme Jedusor
+        [get_direction_bfs, [voldemor, check_apple, True], False]] # Pomme Elvis Jedusor
     while True:
         res = ws.recv()
         if (res=="2"):
