@@ -126,7 +126,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
 
     return move
 
-def get_void_squares(game, player):
+def get_void_squares(game, player, to_remove=[]):
     if not player:return 0
     queue = [player[0]]
     board = [[0 for i in range(game.width)] for i in range(game.height)]
@@ -181,19 +181,18 @@ def get_dumb_moves(game, deepmax=2, deep=0):
     
 
     #get a score for each move
-    best_scores = []
+    scores = []
     best_score = -400
     for move in p1_moves:
-        best_score = -400
         value = make_move(game, game.p1, 1, move)
         score = get_dumb_moves(game, deepmax, deep+1)
         if score>best_score:
             best_score = score
         cancel_move(game, game.p1, move, value)
-        best_scores.append(score)
+        scores.append(score)
     
-    for i in range(len(best_scores)):
-        if best_scores[i]<best_score:
+    for i in range(len(scores)):
+        if scores[i]<best_score:
             to_remove.append(p1_moves[i])
             
     if deep==0:return to_remove
