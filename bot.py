@@ -5,6 +5,15 @@ import random
 
 MOVES = ["W", "A", "S", "D"]
 
+def get_close_nodes(game, node):
+    next_nodes = [
+        {"x": node["x"], "y": (node["y"]-1)%game.height},#up
+        {"x": (node["x"]-1)%game.width, "y": node["y"]},#left
+        {"x": node["x"], "y": (node["y"]+1)%game.height},#down
+        {"x": (node["x"]+1)%game.width, "y": node["y"]}#right
+    ]
+    return next_nodes
+
 def check_apple(game, square):
     res = game.board[square["y"]][square["x"]]==3
     return res
@@ -17,51 +26,42 @@ def voldemor(game, square):
     if len(game.p2) >= len(game.p1):return check_apple(game, square)
     return check_head_p2(game, square) or check_apple(game, square)
 
-def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_dumb=False, anti_boucle=False):
+def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_dumb=False, anti_boucle=False, avoid_infinity=False):
     #hashmap to check if a node's already been explored and do the backtracking
     board  = [[0 for i in range(game.width)] for i in range(game.height)]
     queue = [game.p1[0]]
 
-    # free the tail of the p2 player if there isn't any apple close to its head
-    if anti_boucle:
-        node = game.p2[0]
-        next_nodes = [
-            {"x": node["x"], "y": (node["y"]-1)%game.height},#up
-            {"x": (node["x"]-1)%game.width, "y": node["y"]},#left
-            {"x": node["x"], "y": (node["y"]+1)%game.height},#down
-            {"x": (node["x"]+1)%game.width, "y": node["y"]}]#right
-        have_apple = False
-        head_tail = False
-        for next_node in next_nodes:
-            if game.board[next_node["y"]][next_node["x"]]==3:have_apple=True
-            if next_node["y"]==game.p2[-1]["y"] and next_node["x"]==game.p2[-1]["x"]:head_tail=True
-        
-        if not have_apple:
-            #if the head of the p2 touch its tail see the tail as an apple
-            if head_tail:game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=3
-            else: game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=0
-
     #avoid to start with dumb moves
     if anti_dumb:
-        dumb_moves = get_dumb_moves(game, check_good_target)
+        dumb_moves = get_dumb_moves(game)
         #print(f"dumb moves: {dumb_moves}")
         for dumb_move in dumb_moves:
             board[dumb_move["y"]][dumb_move["x"]] = 1
     
 
+    # free the tail of the p2 player if there isn't any apple close to its head
+    if anti_boucle:
+        node = game.p2[0]
+        next_nodes = get_close_nodes(game, node)
+        have_apple = False
+        head_tail = False
+        for next_node in next_nodes:
+            if game.board[next_node["y"]][next_node["x"]]==3:have_apple=True
+            if next_node==game.p2[-1]:head_tail=True
+        
+        if not have_apple:
+            #if the head of the p2 touch its tail see the tail as an apple
+            if head_tail:game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=3
+            else: game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=0
+    
     #print(f"snake: {game.p1[0]}")
     #put true where the head is, for the backtracking
-    board[game.p1[0]["y"]][game.p1[0]["x"]] = True
     target = None
+    board[game.p1[0]["y"]][game.p1[0]["x"]] = True
     #find the closest target
     while queue and not target:
         node = queue.pop(0)
-        next_nodes = [
-            {"x": node["x"], "y": (node["y"]-1)%game.height},#up
-            {"x": (node["x"]-1)%game.width, "y": node["y"]},#left
-            {"x": node["x"], "y": (node["y"]+1)%game.height},#down
-            {"x": (node["x"]+1)%game.width, "y": node["y"]}#right
-        ]
+        next_nodes = get_close_nodes(game, node)
         random.shuffle(next_nodes)
 
         for next_node in next_nodes:
@@ -78,19 +78,26 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
 
     #print(f"target: {target}")
     if target==None and check_target_backup==None:
-        moves = get_all_moves(game, game.p1, check_good_target)
+        moves = get_all_moves(game, game.p1)
         if not anti_dumb:target = moves[0]
         else:
             for move in moves:
                 found = False
                 for dumb in dumb_moves:
-                    if dumb["x"]==move["x"] and dumb["y"]==move["y"]:found = True
+                    if dumb==move:found = True
                 if not found:
                     target = move
                     break
         if not target:return None
-    elif target==None:return get_direction_bfs(game, check_target_backup, anti_dumb=anti_dumb)
+    elif target==None:return get_direction_bfs(game, check_target_backup, anti_dumb=anti_dumb, anti_boucle=anti_boucle)
     #print(f"target: {target}")
+
+    if avoid_infinity and game.repeted>=40:
+        moves = get_all_moves(game, game.p1)
+        moves = [move for move in moves if board[move["y"]][move["x"]]!=1]
+        target = moves[random.randint(0, len(moves)-1)]
+        print(target)
+        print(board[target["x"]][target["y"]])
 
     #backtrack to find the next node to go
     node = target
@@ -127,14 +134,8 @@ def get_void_squares(game, player):
 
     while queue:
         node = queue.pop(0)
-        next_nodes = [
-            {"x": node["x"], "y": (node["y"]-1)%game.height},#up
-            {"x": (node["x"]-1)%game.width, "y": node["y"]},#left
-            {"x": node["x"], "y": (node["y"]+1)%game.height},#down
-            {"x": (node["x"]+1)%game.width, "y": node["y"]}#right
-        ]
+        next_nodes = get_close_nodes(game, node)
         for next_node in next_nodes:
-            #check if already explored
             if not board[next_node["y"]][next_node["x"]] and not game.board[next_node["y"]][next_node["x"]] in [1, 2]:
                 board[next_node["y"]][next_node["x"]]=node
                 queue.append({"x":next_node["x"], "y":next_node["y"]})
@@ -142,18 +143,12 @@ def get_void_squares(game, player):
 
     return number
 
-def get_all_moves(game, player, check_good_target):
+def get_all_moves(game, player):
     moves = []
     node = player[0]
-    next_nodes = [
-        {"x": node["x"], "y": (node["y"]-1)%game.height},#up
-        {"x": (node["x"]-1)%game.width, "y": node["y"]},#left
-        {"x": node["x"], "y": (node["y"]+1)%game.height},#down
-        {"x": (node["x"]+1)%game.width, "y": node["y"]}#right
-    ]
-
+    next_nodes = get_close_nodes(game, node)
     for next_node in next_nodes:
-        if game.board[next_node["y"]][next_node["x"]]==0 or check_good_target(game, next_node):
+        if game.board[next_node["y"]][next_node["x"]] in [0, 3]:
             moves.append(next_node)
     return moves
 
@@ -167,17 +162,17 @@ def cancel_move(game, player, move, value):
     player.remove(move)
     game.board[move["y"]][move["x"]] = value
 
-def get_dumb_moves(game, check_good_target):
+def get_dumb_moves(game):
     #get all the moves that are not part of a snake already
-    p1_moves = get_all_moves(game, game.p1, check_good_target)
+    p1_moves = get_all_moves(game, game.p1)
 
     #if same strength or less, avoid head contact
     to_remove = []
     if (len(game.p2) >= len(game.p1)):
-        p2_moves = get_all_moves(game, game.p2, check_good_target)
+        p2_moves = get_all_moves(game, game.p2)
         for move2 in p2_moves:
             for move1 in p1_moves:
-                if move2["x"]==move1["x"] and move2["y"]==move1["y"]:
+                if move2==move1:
                     to_remove.append(move1)
                     break
         for remove in to_remove:
@@ -186,19 +181,19 @@ def get_dumb_moves(game, check_good_target):
 
     #get a score for each move
     best_scores = []
-    for p1_move in p1_moves:
+    for move in p1_moves:
         best_score = -400
-        value1 = make_move(game, game.p1, 1, p1_move)
+        value = make_move(game, game.p1, 1, move)
         score = get_void_squares(game, game.p1)
         if score>best_score:
             best_score = score
-        cancel_move(game, game.p1, p1_move, value1)
-        best_scores.append(best_score)
+        cancel_move(game, game.p1, move, value)
+        best_scores.append(score)
     
-    for i in range(len(p1_moves)):
+    for i in range(len(best_scores)):
         if best_scores[i]<best_score:
             to_remove.append(p1_moves[i])
-    
+            
     return to_remove
 
 class Game:
@@ -210,6 +205,7 @@ class Game:
         self.apples = []
         self.board  = [[0 for i in range(self.width)] for i in range(self.height)]
         self.dir = 1
+        self.repeted = 0 #count the number of times it took the same direction
     
     def print(self):
         texts = [
@@ -283,12 +279,14 @@ class Game:
 def play(ws, bot):
     game = Game()
     """
-    [get_direction, [check_good_target, check_target_backup, anti_dumb, anti_boucle], do_square]
+    [get_direction, [check_good_target, check_target_backup, anti_dumb, anti_boucle, avoid_infinity], do_square]
     """
     bots = [
         [get_direction_bfs, [check_apple, None, False, False], True], # pomme des terres
         [get_direction_bfs, [check_apple, None, False, False], False], # Pomme Jedusor
-        [get_direction_bfs, [voldemor, None, True, True], False]] # Pomme Elvis Jedusor
+        [get_direction_bfs, [voldemor, None, True, True, True], False], # Pomme Elvis Jedusor
+        [get_direction_bfs, [check_head_p2, check_apple, True, True, True], False] # test
+    ]
     while True:
         res = ws.recv()
         if (res=="2"):
@@ -307,7 +305,11 @@ def play(ws, bot):
             game.update_board()
             move = game.get_move(*bots[bot])
             #print(move)
-            if move!=None:ws.send(f'42["move","{move}"]')
+            if move!=None:
+                ws.send(f'42["move","{move}"]')
+                game.repeted = 0
+            else:
+                game.repeted+=1
         elif (re.search('addSnake', res)):
             #print("add snake")
             pass
