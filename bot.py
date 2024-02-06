@@ -5,6 +5,15 @@ import random
 
 MOVES = ["W", "A", "S", "D"]
 
+def get_close_nodes(game, node):
+    next_nodes = [
+        {"x": node["x"], "y": (node["y"]-1)%game.height},#up
+        {"x": (node["x"]-1)%game.width, "y": node["y"]},#left
+        {"x": node["x"], "y": (node["y"]+1)%game.height},#down
+        {"x": (node["x"]+1)%game.width, "y": node["y"]}#right
+    ]
+    return next_nodes
+
 def check_apple(game, square):
     res = game.board[square["y"]][square["x"]]==3
     return res
@@ -24,7 +33,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
 
     #avoid to start with dumb moves
     if anti_dumb:
-        dumb_moves = get_dumb_moves(game, check_good_target)
+        dumb_moves = get_dumb_moves(game)
         #print(f"dumb moves: {dumb_moves}")
         for dumb_move in dumb_moves:
             board[dumb_move["y"]][dumb_move["x"]] = 1
@@ -33,11 +42,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
     # free the tail of the p2 player if there isn't any apple close to its head
     if anti_boucle:
         node = game.p2[0]
-        next_nodes = [
-            {"x": node["x"], "y": (node["y"]-1)%game.height},#up
-            {"x": (node["x"]-1)%game.width, "y": node["y"]},#left
-            {"x": node["x"], "y": (node["y"]+1)%game.height},#down
-            {"x": (node["x"]+1)%game.width, "y": node["y"]}]#right
+        next_nodes = get_close_nodes(game, node)
         have_apple = False
         head_tail = False
         for next_node in next_nodes:
@@ -56,12 +61,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
     #find the closest target
     while queue and not target:
         node = queue.pop(0)
-        next_nodes = [
-            {"x": node["x"], "y": (node["y"]-1)%game.height},#up
-            {"x": (node["x"]-1)%game.width, "y": node["y"]},#left
-            {"x": node["x"], "y": (node["y"]+1)%game.height},#down
-            {"x": (node["x"]+1)%game.width, "y": node["y"]}#right
-        ]
+        next_nodes = get_close_nodes(game, node)
         random.shuffle(next_nodes)
 
         for next_node in next_nodes:
@@ -78,7 +78,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
 
     #print(f"target: {target}")
     if target==None and check_target_backup==None:
-        moves = get_all_moves(game, game.p1, check_good_target)
+        moves = get_all_moves(game, game.p1)
         if not anti_dumb:target = moves[0]
         else:
             for move in moves:
@@ -127,12 +127,7 @@ def get_void_squares(game, player):
 
     while queue:
         node = queue.pop(0)
-        next_nodes = [
-            {"x": node["x"], "y": (node["y"]-1)%game.height},#up
-            {"x": (node["x"]-1)%game.width, "y": node["y"]},#left
-            {"x": node["x"], "y": (node["y"]+1)%game.height},#down
-            {"x": (node["x"]+1)%game.width, "y": node["y"]}#right
-        ]
+        next_nodes = get_close_nodes(game, node)
         for next_node in next_nodes:
             #check if already explored
             if not board[next_node["y"]][next_node["x"]] and not game.board[next_node["y"]][next_node["x"]] in [1, 2]:
@@ -142,18 +137,12 @@ def get_void_squares(game, player):
 
     return number
 
-def get_all_moves(game, player, check_good_target):
+def get_all_moves(game, player):
     moves = []
     node = player[0]
-    next_nodes = [
-        {"x": node["x"], "y": (node["y"]-1)%game.height},#up
-        {"x": (node["x"]-1)%game.width, "y": node["y"]},#left
-        {"x": node["x"], "y": (node["y"]+1)%game.height},#down
-        {"x": (node["x"]+1)%game.width, "y": node["y"]}#right
-    ]
-
+    next_nodes = get_close_nodes(game, node)
     for next_node in next_nodes:
-        if game.board[next_node["y"]][next_node["x"]]==0 or check_good_target(game, next_node):
+        if game.board[next_node["y"]][next_node["x"]] in [0, 3]:
             moves.append(next_node)
     return moves
 
@@ -167,14 +156,14 @@ def cancel_move(game, player, move, value):
     player.remove(move)
     game.board[move["y"]][move["x"]] = value
 
-def get_dumb_moves(game, check_good_target):
+def get_dumb_moves(game):
     #get all the moves that are not part of a snake already
-    p1_moves = get_all_moves(game, game.p1, check_good_target)
+    p1_moves = get_all_moves(game, game.p1)
 
     #if same strength or less, avoid head contact
     to_remove = []
     if (len(game.p2) >= len(game.p1)):
-        p2_moves = get_all_moves(game, game.p2, check_good_target)
+        p2_moves = get_all_moves(game, game.p2)
         for move2 in p2_moves:
             for move1 in p1_moves:
                 if move2==move1:
