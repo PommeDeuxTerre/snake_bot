@@ -26,7 +26,7 @@ def voldemor(game, square):
     if len(game.p2) >= len(game.p1):return check_apple(game, square)
     return check_head_p2(game, square) or check_apple(game, square)
 
-def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_dumb=False, anti_boucle=False):
+def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_dumb=False, anti_boucle=False, avoid_infinity=False):
     #hashmap to check if a node's already been explored and do the backtracking
     board  = [[0 for i in range(game.width)] for i in range(game.height)]
     queue = [game.p1[0]]
@@ -53,11 +53,11 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
             #if the head of the p2 touch its tail see the tail as an apple
             if head_tail:game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=3
             else: game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=0
-
+    
     #print(f"snake: {game.p1[0]}")
     #put true where the head is, for the backtracking
-    board[game.p1[0]["y"]][game.p1[0]["x"]] = True
     target = None
+    board[game.p1[0]["y"]][game.p1[0]["x"]] = True
     #find the closest target
     while queue and not target:
         node = queue.pop(0)
@@ -91,6 +91,13 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
         if not target:return None
     elif target==None:return get_direction_bfs(game, check_target_backup, anti_dumb=anti_dumb, anti_boucle=anti_boucle)
     #print(f"target: {target}")
+
+    if avoid_infinity and game.repeted>=40:
+        moves = get_all_moves(game, game.p1)
+        moves = [move for move in moves if board[move["y"]][move["x"]]!=1]
+        target = moves[random.randint(0, len(moves)-1)]
+        print(target)
+        print(board[target["x"]][target["y"]])
 
     #backtrack to find the next node to go
     node = target
@@ -198,6 +205,7 @@ class Game:
         self.apples = []
         self.board  = [[0 for i in range(self.width)] for i in range(self.height)]
         self.dir = 1
+        self.repeted = 0 #count the number of times it took the same direction
     
     def print(self):
         texts = [
@@ -271,12 +279,14 @@ class Game:
 def play(ws, bot):
     game = Game()
     """
-    [get_direction, [check_good_target, check_target_backup, anti_dumb, anti_boucle], do_square]
+    [get_direction, [check_good_target, check_target_backup, anti_dumb, anti_boucle, avoid_infinity], do_square]
     """
     bots = [
         [get_direction_bfs, [check_apple, None, False, False], True], # pomme des terres
         [get_direction_bfs, [check_apple, None, False, False], False], # Pomme Jedusor
-        [get_direction_bfs, [voldemor, None, True, True], False]] # Pomme Elvis Jedusor
+        [get_direction_bfs, [voldemor, None, True, True, True], False], # Pomme Elvis Jedusor
+        [get_direction_bfs, [check_head_p2, check_apple, True, True, True], False] # test
+    ]
     while True:
         res = ws.recv()
         if (res=="2"):
@@ -295,7 +305,11 @@ def play(ws, bot):
             game.update_board()
             move = game.get_move(*bots[bot])
             #print(move)
-            if move!=None:ws.send(f'42["move","{move}"]')
+            if move!=None:
+                ws.send(f'42["move","{move}"]')
+                game.repeted = 0
+            else:
+                game.repeted+=1
         elif (re.search('addSnake', res)):
             #print("add snake")
             pass
