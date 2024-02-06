@@ -22,6 +22,14 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
     board  = [[0 for i in range(game.width)] for i in range(game.height)]
     queue = [game.p1[0]]
 
+    #avoid to start with dumb moves
+    if anti_dumb:
+        dumb_moves = get_dumb_moves(game, check_good_target)
+        #print(f"dumb moves: {dumb_moves}")
+        for dumb_move in dumb_moves:
+            board[dumb_move["y"]][dumb_move["x"]] = 1
+    
+
     # free the tail of the p2 player if there isn't any apple close to its head
     if anti_boucle:
         node = game.p2[0]
@@ -40,14 +48,6 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
             #if the head of the p2 touch its tail see the tail as an apple
             if head_tail:game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=3
             else: game.board[game.p2[-1]["y"]][game.p2[-1]["x"]]=0
-
-    #avoid to start with dumb moves
-    if anti_dumb:
-        dumb_moves = get_dumb_moves(game, check_good_target)
-        #print(f"dumb moves: {dumb_moves}")
-        for dumb_move in dumb_moves:
-            board[dumb_move["y"]][dumb_move["x"]] = 1
-    
 
     #print(f"snake: {game.p1[0]}")
     #put true where the head is, for the backtracking
@@ -177,7 +177,7 @@ def get_dumb_moves(game, check_good_target):
         p2_moves = get_all_moves(game, game.p2, check_good_target)
         for move2 in p2_moves:
             for move1 in p1_moves:
-                if move2["x"]==move1["x"] and move2["y"]==move1["y"]:
+                if move2==move1:
                     to_remove.append(move1)
                     break
         for remove in to_remove:
@@ -193,12 +193,12 @@ def get_dumb_moves(game, check_good_target):
         if score>best_score:
             best_score = score
         cancel_move(game, game.p1, p1_move, value1)
-        best_scores.append(best_score)
+        best_scores.append(score)
     
-    for i in range(len(p1_moves)):
+    for i in range(len(best_scores)):
         if best_scores[i]<best_score:
             to_remove.append(p1_moves[i])
-    
+            
     return to_remove
 
 class Game:
