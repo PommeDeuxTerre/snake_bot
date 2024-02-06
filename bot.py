@@ -33,7 +33,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
 
     #avoid to start with dumb moves
     if anti_dumb:
-        dumb_moves = get_dumb_moves(game)
+        dumb_moves = get_dumb_moves(game, deepmax=anti_dumb)
         #print(f"dumb moves: {dumb_moves}")
         for dumb_move in dumb_moves:
             board[dumb_move["y"]][dumb_move["x"]] = 1
@@ -162,7 +162,8 @@ def cancel_move(game, player, move, value):
     player.remove(move)
     game.board[move["y"]][move["x"]] = value
 
-def get_dumb_moves(game):
+def get_dumb_moves(game, deepmax=2, deep=0):
+    if deep==deepmax:return get_void_squares(game, game.p1)
     #get all the moves that are not part of a snake already
     p1_moves = get_all_moves(game, game.p1)
 
@@ -181,10 +182,11 @@ def get_dumb_moves(game):
 
     #get a score for each move
     best_scores = []
+    best_score = -400
     for move in p1_moves:
         best_score = -400
         value = make_move(game, game.p1, 1, move)
-        score = get_void_squares(game, game.p1)
+        score = get_dumb_moves(game, deepmax, deep+1)
         if score>best_score:
             best_score = score
         cancel_move(game, game.p1, move, value)
@@ -194,7 +196,8 @@ def get_dumb_moves(game):
         if best_scores[i]<best_score:
             to_remove.append(p1_moves[i])
             
-    return to_remove
+    if deep==0:return to_remove
+    return best_score
 
 class Game:
     def __init__(self):
@@ -284,8 +287,8 @@ def play(ws, bot):
     bots = [
         [get_direction_bfs, [check_apple, None, False, False], True], # pomme des terres
         [get_direction_bfs, [check_apple, None, False, False], False], # Pomme Jedusor
-        [get_direction_bfs, [voldemor, None, True, True, True], False], # Pomme Elvis Jedusor
-        [get_direction_bfs, [check_head_p2, check_apple, True, True, True], False] # test
+        [get_direction_bfs, [voldemor, None, 2, True, True], False], # Pomme Elvis Jedusor
+        [get_direction_bfs, [check_head_p2, check_apple, 2, True, True], False] # test
     ]
     while True:
         res = ws.recv()
