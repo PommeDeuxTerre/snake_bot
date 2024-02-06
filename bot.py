@@ -47,7 +47,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
         head_tail = False
         for next_node in next_nodes:
             if game.board[next_node["y"]][next_node["x"]]==3:have_apple=True
-            if next_node["y"]==game.p2[-1]["y"] and next_node["x"]==game.p2[-1]["x"]:head_tail=True
+            if next_node==game.p2[-1]:head_tail=True
         
         if not have_apple:
             #if the head of the p2 touch its tail see the tail as an apple
@@ -84,12 +84,12 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
             for move in moves:
                 found = False
                 for dumb in dumb_moves:
-                    if dumb["x"]==move["x"] and dumb["y"]==move["y"]:found = True
+                    if dumb==move:found = True
                 if not found:
                     target = move
                     break
         if not target:return None
-    elif target==None:return get_direction_bfs(game, check_target_backup, anti_dumb=anti_dumb)
+    elif target==None:return get_direction_bfs(game, check_target_backup, anti_dumb=anti_dumb, anti_boucle=anti_boucle)
     #print(f"target: {target}")
 
     #backtrack to find the next node to go
@@ -129,7 +129,6 @@ def get_void_squares(game, player):
         node = queue.pop(0)
         next_nodes = get_close_nodes(game, node)
         for next_node in next_nodes:
-            #check if already explored
             if not board[next_node["y"]][next_node["x"]] and not game.board[next_node["y"]][next_node["x"]] in [1, 2]:
                 board[next_node["y"]][next_node["x"]]=node
                 queue.append({"x":next_node["x"], "y":next_node["y"]})
@@ -175,13 +174,13 @@ def get_dumb_moves(game):
 
     #get a score for each move
     best_scores = []
-    for p1_move in p1_moves:
+    for move in p1_moves:
         best_score = -400
-        value1 = make_move(game, game.p1, 1, p1_move)
+        value = make_move(game, game.p1, 1, move)
         score = get_void_squares(game, game.p1)
         if score>best_score:
             best_score = score
-        cancel_move(game, game.p1, p1_move, value1)
+        cancel_move(game, game.p1, move, value)
         best_scores.append(score)
     
     for i in range(len(best_scores)):
