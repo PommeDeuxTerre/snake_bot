@@ -131,6 +131,8 @@ def get_void_squares(game, player, to_remove=[]):
     queue = [player[0]]
     board = [[0 for i in range(game.width)] for i in range(game.height)]
     number = 0
+    for square in to_remove:
+        board[square["y"]][square["x"]] = 1
 
     while queue:
         node = queue.pop(0)
@@ -163,7 +165,7 @@ def cancel_move(game, player, move, value):
     game.board[move["y"]][move["x"]] = value
 
 def get_dumb_moves(game, deepmax=2, deep=0):
-    if deep==deepmax:return get_void_squares(game, game.p1)
+    if deep==deepmax:return get_void_squares(game, game.p1, get_close_nodes(game, game.p2[0]))
     #get all the moves that are not part of a snake already
     p1_moves = get_all_moves(game, game.p1)
 
