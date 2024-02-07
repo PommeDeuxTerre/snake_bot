@@ -131,13 +131,15 @@ def get_void_squares(game, player, to_remove=[]):
     queue = [player[0]]
     board = [[0 for i in range(game.width)] for i in range(game.height)]
     number = 0
-    for square in to_remove:
-        board[square["y"]][square["x"]] = 1
 
     while queue:
         node = queue.pop(0)
         next_nodes = get_close_nodes(game, node)
         for next_node in next_nodes:
+            if next_node in to_remove and game.board[next_node["y"]][next_node["x"]] in [0, 3]:
+                number+=1
+                board[next_node["y"]][next_node["x"]] = 1
+                to_remove.remove(next_node)
             if not board[next_node["y"]][next_node["x"]] and not game.board[next_node["y"]][next_node["x"]] in [1, 2]:
                 board[next_node["y"]][next_node["x"]]=node
                 queue.append({"x":next_node["x"], "y":next_node["y"]})
