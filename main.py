@@ -101,7 +101,7 @@ def main():
     bots = [
         ["Pomme Des Terres", POMME_DES_TERRES, 1],
         ["Pomme Jedsuor", POMME_JEDUSOR, 1],
-        ["Pomme Elvis Jedsuor", POMME_JEDUSOR, 1]
+        ["Pomme Elvis Jedsuor", POMME_ELVIS_JEDUSOR, 1]
     ]
     for bot in bots:
         current_bots.append(threading.Thread(target=launch_bot, args=(bot[0], bot[1], bot[2])))
