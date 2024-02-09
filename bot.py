@@ -79,7 +79,7 @@ def get_direction_bfs(game, check_good_target, check_target_backup = None, anti_
     #print(f"target: {target}")
     if target==None and check_target_backup==None:
         moves = get_all_moves(game, game.p1)
-        if not anti_dumb:target = moves[0]
+        if not anti_dumb:target = moves[0] if moves else None
         else:
             for move in moves:
                 found = False
