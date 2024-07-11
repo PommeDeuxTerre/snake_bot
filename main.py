@@ -6,8 +6,10 @@ from bot import play
 import datas
 import time
 
+URL = "snake-online-54f289ce69bf.herokuapp.com"
+
 def get_sid(session):
-    url = "https://snake-online-d2fcff637053.herokuapp.com/socket.io/?EIO=4&transport=polling&t=Or6DQd9"
+    url = f"https://{URL}/socket.io/?EIO=4&transport=polling&t=Or6DQd9"
     r = session.get(url)
 
     try:sid = json.loads(r.text[1:])["sid"]
@@ -16,14 +18,14 @@ def get_sid(session):
     return sid
 
 def init_ws(session, sid):
-    url=f"wss://snake-online-d2fcff637053.herokuapp.com/socket.io/?EIO=4&transport=websocket&sid={sid}"
+    url=f"wss://{URL}/socket.io/?EIO=4&transport=websocket&sid={sid}"
 
     ws = websocket.WebSocket()
     ws.connect(url)
     return ws
 
 def connect(session, sid, ws, username):
-    r = session.post(f"https://snake-online-d2fcff637053.herokuapp.com/socket.io/?EIO=4&transport=polling&t=Or6DQfM&sid={sid}",
+    r = session.post(f"https://{URL}/socket.io/?EIO=4&transport=polling&t=Or6DQfM&sid={sid}",
            data='40')
     print(f"sent 40: {r.status_code}")
 
@@ -31,7 +33,7 @@ def connect(session, sid, ws, username):
     print(f"sent '2probe': {ws.status}")
     print(f"recieve {ws.recv()}: {ws.status}")
 
-    r = session.post(f"https://snake-online-d2fcff637053.herokuapp.com/socket.io/?EIO=4&transport=polling&t=Or6DQfM&sid={sid}",
+    r = session.post(f"https://{URL}/socket.io/?EIO=4&transport=polling&t=Or6DQfM&sid={sid}",
            data=f'420["name","{username}"]')
     print(f"sent username: {r.status_code}")
 
